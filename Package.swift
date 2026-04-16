@@ -32,13 +32,7 @@ let package = Package(
     targets: [
         .target(
             name: "FoxMountainKit",
-            path: "Sources/FoxMountainKit",
-            exclude: [
-                "Components/FMBannerAdView.swift",
-                "Services/FMAdManager.swift",
-                "Services/FMAnalytics.swift",
-                "Services/FMPurchaseManager.swift",
-            ]
+            path: "Sources/FoxMountainKit"
         ),
         .target(
             name: "FoxMountainMonetization",
@@ -46,10 +40,7 @@ let package = Package(
                 "FoxMountainKit",
                 .product(name: "RevenueCat", package: "purchases-ios"),
             ],
-            path: "Sources/FoxMountainKit",
-            sources: [
-                "Services/FMPurchaseManager.swift",
-            ]
+            path: "Sources/FoxMountainMonetization"
         ),
         .target(
             name: "FoxMountainAnalytics",
@@ -57,10 +48,7 @@ let package = Package(
                 "FoxMountainKit",
                 .product(name: "FirebaseAnalytics", package: "firebase-ios-sdk"),
             ],
-            path: "Sources/FoxMountainKit",
-            sources: [
-                "Services/FMAnalytics.swift",
-            ]
+            path: "Sources/FoxMountainAnalytics"
         ),
         .target(
             name: "FoxMountainAds",
@@ -69,11 +57,7 @@ let package = Package(
                 "FoxMountainMonetization",
                 .product(name: "GoogleMobileAds", package: "swift-package-manager-google-mobile-ads"),
             ],
-            path: "Sources/FoxMountainKit",
-            sources: [
-                "Components/FMBannerAdView.swift",
-                "Services/FMAdManager.swift",
-            ]
+            path: "Sources/FoxMountainAds"
         ),
     ]
 )

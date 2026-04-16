@@ -75,7 +75,7 @@ public struct FMOnboardingView: View {
                             currentPage += 1
                         }
                     } else {
-                        FMAnalytics.logEvent("onboarding_completed")
+                        FMPlatformHooks.analytics.logEvent("onboarding_completed", nil)
                         onComplete()
                     }
                 }
@@ -83,7 +83,7 @@ public struct FMOnboardingView: View {
                 // Skip button (not on last page)
                 if currentPage < pages.count - 1 {
                     Button {
-                        FMAnalytics.logEvent("onboarding_skipped", parameters: ["page": currentPage])
+                        FMPlatformHooks.analytics.logEvent("onboarding_skipped", ["page": currentPage])
                         onComplete()
                     } label: {
                         Text("Skip")
@@ -98,9 +98,6 @@ public struct FMOnboardingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(FMColors.background)
         .ignoresSafeArea()
-        .onAppear {
-            FMAnalytics.logScreen("Onboarding")
-        }
     }
 
     private func pageView(_ page: Page) -> some View {

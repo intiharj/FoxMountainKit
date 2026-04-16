@@ -1,41 +1,58 @@
 import SwiftUI
 
 /// Fox Mountain Settings screen template
-/// Provides consistent settings UI with built-in sections for purchases
+/// Provides consistent settings UI with optional upgrade/restore hooks.
 public struct FMSettingsView<Content: View>: View {
+
+    public struct PurchaseState {
+        public var hasRemovedAds: Bool
+        public var isPurchasing: Bool
+        public var removeAdsPrice: String
+
+        public init(
+            hasRemovedAds: Bool = false,
+            isPurchasing: Bool = false,
+            removeAdsPrice: String = "$1.99"
+        ) {
+            self.hasRemovedAds = hasRemovedAds
+            self.isPurchasing = isPurchasing
+            self.removeAdsPrice = removeAdsPrice
+        }
+    }
 
     private let appName: String
     private let showPurchaseSection: Bool
+    private let purchaseState: PurchaseState
+    private let onPurchase: (() async -> Void)?
+    private let onRestore: (() async -> Void)?
     private let content: Content
 
-    @Environment(\.purchaseManager) private var purchaseManager
-
-    /// Create a settings view with custom content sections
-    /// - Parameters:
-    ///   - appName: Name of the app (for About link)
-    ///   - showPurchaseSection: Whether to show the remove ads/restore purchases section
-    ///   - content: Custom settings sections to display
+    /// Create a settings view with custom content sections.
+    /// Optional purchase hooks let companion monetization modules wire in RevenueCat later.
     public init(
         appName: String,
-        showPurchaseSection: Bool = true,
+        showPurchaseSection: Bool = false,
+        purchaseState: PurchaseState = .init(),
+        onPurchase: (() async -> Void)? = nil,
+        onRestore: (() async -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.appName = appName
         self.showPurchaseSection = showPurchaseSection
+        self.purchaseState = purchaseState
+        self.onPurchase = onPurchase
+        self.onRestore = onRestore
         self.content = content()
     }
 
     public var body: some View {
         List {
-            // Custom content sections
             content
 
-            // Purchase section
-            if showPurchaseSection && !purchaseManager.hasRemovedAds {
+            if showPurchaseSection && !purchaseState.hasRemovedAds {
                 purchaseSection
             }
 
-            // Restore purchases (always show)
             if showPurchaseSection {
                 restoreSection
             }
@@ -48,15 +65,12 @@ public struct FMSettingsView<Content: View>: View {
         .analyticsScreen("Settings")
     }
 
-    // MARK: - Sections
-
     private var purchaseSection: some View {
         Section {
             Button {
-                FMAnalytics.logRemoveAdsTapped()
-                Task {
-                    await purchaseManager.purchaseRemoveAds()
-                }
+                guard let onPurchase else { return }
+                FMPlatformHooks.analytics.logEvent("remove_ads_tapped", nil)
+                Task { await onPurchase() }
             } label: {
                 HStack {
                     Label("Remove Ads", systemImage: "xmark.circle")
@@ -64,15 +78,15 @@ public struct FMSettingsView<Content: View>: View {
 
                     Spacer()
 
-                    if purchaseManager.isPurchasing {
+                    if purchaseState.isPurchasing {
                         ProgressView()
                     } else {
-                        Text(purchaseManager.removeAdsPrice)
+                        Text(purchaseState.removeAdsPrice)
                             .foregroundStyle(FMColors.accent)
                     }
                 }
             }
-            .disabled(purchaseManager.isPurchasing)
+            .disabled(purchaseState.isPurchasing || onPurchase == nil)
         } header: {
             Text("Upgrade")
         } footer: {
@@ -83,10 +97,9 @@ public struct FMSettingsView<Content: View>: View {
     private var restoreSection: some View {
         Section {
             Button {
-                FMAnalytics.logRestorePurchasesTapped()
-                Task {
-                    await purchaseManager.restorePurchases()
-                }
+                guard let onRestore else { return }
+                FMPlatformHooks.analytics.logEvent("restore_purchases_tapped", nil)
+                Task { await onRestore() }
             } label: {
                 HStack {
                     Text("Restore Purchases")
@@ -94,14 +107,14 @@ public struct FMSettingsView<Content: View>: View {
 
                     Spacer()
 
-                    if purchaseManager.isPurchasing {
+                    if purchaseState.isPurchasing {
                         ProgressView()
                     }
                 }
             }
-            .disabled(purchaseManager.isPurchasing)
+            .disabled(purchaseState.isPurchasing || onRestore == nil)
         } footer: {
-            if purchaseManager.hasRemovedAds {
+            if purchaseState.hasRemovedAds {
                 Text("Ads have been removed. Thank you for your support!")
             } else {
                 Text("Restore previous purchases if you reinstalled the app.")
@@ -110,9 +123,6 @@ public struct FMSettingsView<Content: View>: View {
     }
 }
 
-// MARK: - Settings Row Components
-
-/// Standard toggle row for settings
 public struct FMSettingsToggle: View {
     let title: String
     let icon: String?
@@ -142,13 +152,12 @@ public struct FMSettingsToggle: View {
         .tint(FMColors.accent)
         .onChange(of: isOn) { _, newValue in
             FMHaptics.toggle()
-            FMAnalytics.logSettingChanged(title, value: newValue)
+            FMPlatformHooks.analytics.logSettingChanged(title, newValue)
             onChange?(newValue)
         }
     }
 }
 
-/// Standard picker row for settings
 public struct FMSettingsPicker<T: Hashable>: View {
     let title: String
     let icon: String?
@@ -185,12 +194,11 @@ public struct FMSettingsPicker<T: Hashable>: View {
         .tint(FMColors.accent)
         .onChange(of: selection) { _, newValue in
             FMHaptics.selection()
-            FMAnalytics.logSettingChanged(title, value: newValue)
+            FMPlatformHooks.analytics.logSettingChanged(title, newValue)
         }
     }
 }
 
-/// Standard slider row for settings
 public struct FMSettingsSlider: View {
     let title: String
     @Binding var value: Double
@@ -226,15 +234,13 @@ public struct FMSettingsSlider: View {
             } onEditingChanged: { editing in
                 if !editing {
                     FMHaptics.selection()
-                    FMAnalytics.logSettingChanged(title, value: value)
+                    FMPlatformHooks.analytics.logSettingChanged(title, value)
                 }
             }
             .tint(FMColors.accent)
         }
     }
 }
-
-// MARK: - Preview
 
 #Preview {
     NavigationStack {

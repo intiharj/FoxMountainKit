@@ -68,7 +68,6 @@ public struct FMAboutView: View {
         .background(FMColors.background)
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
-        .analyticsScreen("About")
     }
 
     // MARK: - Sections
