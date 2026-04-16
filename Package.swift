@@ -11,6 +11,18 @@ let package = Package(
             name: "FoxMountainKit",
             targets: ["FoxMountainKit"]
         ),
+        .library(
+            name: "FoxMountainMonetization",
+            targets: ["FoxMountainMonetization"]
+        ),
+        .library(
+            name: "FoxMountainAnalytics",
+            targets: ["FoxMountainAnalytics"]
+        ),
+        .library(
+            name: "FoxMountainAds",
+            targets: ["FoxMountainAds"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/RevenueCat/purchases-ios.git", from: "5.0.0"),
@@ -20,12 +32,48 @@ let package = Package(
     targets: [
         .target(
             name: "FoxMountainKit",
+            path: "Sources/FoxMountainKit",
+            exclude: [
+                "Components/FMBannerAdView.swift",
+                "Services/FMAdManager.swift",
+                "Services/FMAnalytics.swift",
+                "Services/FMPurchaseManager.swift",
+            ]
+        ),
+        .target(
+            name: "FoxMountainMonetization",
             dependencies: [
+                "FoxMountainKit",
                 .product(name: "RevenueCat", package: "purchases-ios"),
+            ],
+            path: "Sources/FoxMountainKit",
+            sources: [
+                "Services/FMPurchaseManager.swift",
+            ]
+        ),
+        .target(
+            name: "FoxMountainAnalytics",
+            dependencies: [
+                "FoxMountainKit",
                 .product(name: "FirebaseAnalytics", package: "firebase-ios-sdk"),
+            ],
+            path: "Sources/FoxMountainKit",
+            sources: [
+                "Services/FMAnalytics.swift",
+            ]
+        ),
+        .target(
+            name: "FoxMountainAds",
+            dependencies: [
+                "FoxMountainKit",
+                "FoxMountainMonetization",
                 .product(name: "GoogleMobileAds", package: "swift-package-manager-google-mobile-ads"),
             ],
-            path: "Sources/FoxMountainKit"
-        )
+            path: "Sources/FoxMountainKit",
+            sources: [
+                "Components/FMBannerAdView.swift",
+                "Services/FMAdManager.swift",
+            ]
+        ),
     ]
 )
